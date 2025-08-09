@@ -188,9 +188,9 @@ public enum SecurityMode
 - **Unrestricted**: Default mode. All types are permitted.
 - **WhitelistOnly**: Only explicitly allowed types or namespaces can be accessed.
 
-### Configuring the Policy
+### Under the Hood
 
-You can configure allowed types and namespaces using static methods:
+Allowed types and namespaces are configured in the policy:
 
 ```csharp
 TypeAccessPolicy.SetPolicy(new[]
@@ -206,7 +206,7 @@ This example:
 
 ### Fine-Grained Controls
 
-You can manipulate the policy at runtime:
+Policy can be manipulated at runtime by your host application:
 
 ```csharp
 TypeAccessPolicy.AddType("MyApp.Tools.ScriptableAction");
@@ -218,6 +218,8 @@ To reset all policies:
 ```csharp
 TypeAccessPolicy.Clear();
 ```
+
+### Configuring the Policy
 
 `TypeAccessPolicy` is internal only. The policy is governed by the machine (runtime) instance via the public API:
 
