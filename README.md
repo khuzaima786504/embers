@@ -20,7 +20,7 @@ Embers is built around a clean, minimal core with the goal of executing Ruby-sty
 
 ```mermaid
 flowchart TD
-    A[Source Code (Ruby-like Script)]
+    A[Ruby-like Script]
     B[Lexer<br/>Embers.Compiler.Lexer]
     C[Parser<br/>Embers.Compiler.Parser]
     D[Expression Tree<br/>IExpression Instances]
