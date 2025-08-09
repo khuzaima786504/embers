@@ -18,6 +18,8 @@ Embers is built around a clean, minimal core with the goal of executing Ruby-sty
 
 ## Design
 
+### Execution Flow
+
 ```mermaid
 flowchart TD
     A[Ruby-like Script]
@@ -37,6 +39,46 @@ flowchart TD
     E --> G
     F --> G
     G --> H
+```
+
+### Logical Topography
+
+```
+graph TD
+    A[Embers]
+    
+    A1[Compiler]
+    A2[Language]
+    A3[Host]
+    A4[Security]
+    A5[Exceptions]
+    A6[Functions]
+
+    A --> A1
+    A --> A2
+    A --> A3
+    A --> A4
+    A --> A5
+    A --> A6
+
+    A1 --> A1_Lexer[Lexer]
+    A1 --> A1_Parser[Parser]
+    A1 --> A1_Token[Token, TokenType, Streams]
+
+    A2 --> A2_Expressions[IExpression + AST Types]
+    A2 --> A2_Context[Context / BlockContext]
+    A2 --> A2_ObjectModel[DynamicObject, ClassDef, etc.]
+
+    A3 --> A3_Function[HostFunction]
+    A3 --> A3_Attribute[HostFunctionAttribute]
+    A3 --> A3_Injector[HostFunctionInjector]
+
+    A4 --> A4_TypeAccess[TypeAccessPolicy]
+
+    A5 --> A5_BuiltinErrors[NameError, TypeError, NoMethodError, ...]
+
+    A6 --> A6_IFunction[IFunction Interface]
+    A6 --> A6_CoreFunctions[Built-in Function Types]
 ```
 
 ## Projects
