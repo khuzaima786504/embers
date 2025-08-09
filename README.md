@@ -7,7 +7,7 @@ Embers is an experimental runtime, taking inspiration from and building upon the
 - [Embers by Joy-less](https://github.com/Joy-less/Embers)
 - [RubySharp by AjLopez](https://github.com/ajlopez/RubySharp)
 
-While a large portion of commonly used functions from Ruby's StdLib are present in the solution, full type binding and implementation is far from complete. Embers' architecture adheres to a strict pattern making it easy to extend, and these features will evolve over time.
+While a large portion of commonly used functions from Ruby's StdLib are present in the solution, full type binding and implementation is far from complete. Embers' architecture adheres to a strict pattern making it easy to extend, and these features will evolve and mature over time.
 
 ## Overview
 
