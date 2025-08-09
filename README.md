@@ -223,7 +223,7 @@ TypeAccessPolicy.Clear();
 
 `TypeAccessPolicy` is internal only. The policy is governed by the machine (runtime) instance via the public API:
 
-```
+```csharp
         /// <summary>
         /// Sets the type access policy.
         /// Allowed entries are a list of full type names that are allowed to be accessed.
