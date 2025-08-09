@@ -1,0 +1,110 @@
+﻿using Embers.Expressions;
+using Embers.Language;
+
+namespace Embers.Tests.Expressions
+{
+    [TestClass]
+    public class ModuleExpressionTests
+    {
+        [TestMethod]
+        public void EvaluateModuleExpression()
+        {
+            Machine machine = new();
+            ModuleExpression expr = new("Module1", new ConstantExpression(1));
+
+            Assert.AreEqual(1, expr.Evaluate(machine.RootContext));
+
+            var result = machine.RootContext.GetValue("Module1");
+
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(DynamicClass));
+
+            var module = (DynamicClass)result;
+
+            var method = module.GetMethod("name");
+            Assert.IsNotNull(method);
+            Assert.AreEqual("Module1", method.Apply(module, module.Constants, null));
+        }
+
+        [TestMethod]
+        public void EvaluateModuleExpressionWithConstantAssignment()
+        {
+            Machine machine = new();
+            ModuleExpression expr = new("Module1", new AssignExpression("ONE", new ConstantExpression(1)));
+
+            Assert.AreEqual(1, expr.Evaluate(machine.RootContext));
+
+            var result = machine.RootContext.GetValue("Module1");
+
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(DynamicClass));
+
+            var module = (DynamicClass)result;
+
+            Assert.AreEqual(1, module.Constants.GetLocalValue("ONE"));
+        }
+
+        [TestMethod]
+        public void EvaluateModuleExpressionWithInternalAssignment()
+        {
+            Machine machine = new();
+            ModuleExpression expr = new("Module1", new AssignExpression("one", new ConstantExpression(1)));
+
+            Assert.AreEqual(1, expr.Evaluate(machine.RootContext));
+
+            var result = machine.RootContext.GetValue("Module1");
+
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(DynamicClass));
+
+            var module = (DynamicClass)result;
+
+            Assert.IsFalse(module.Constants.HasLocalValue("one"));
+        }
+
+        [TestMethod]
+        public void EvaluateModuleExpressionWithClassDefinition()
+        {
+            Machine machine = new();
+            ModuleExpression expr = new("Module1", new ClassExpression(new NameExpression("Foo"), new ConstantExpression(1)));
+
+            Assert.AreEqual(null, expr.Evaluate(machine.RootContext));
+
+            var result = machine.RootContext.GetValue("Module1");
+
+            Assert.IsNotNull(result);
+            Assert.IsInstanceOfType(result, typeof(DynamicClass));
+
+            var module = (DynamicClass)result;
+
+            var @class = module.Constants.GetLocalValue("Foo");
+
+            Assert.IsNotNull(@class);
+            Assert.IsInstanceOfType(@class, typeof(DynamicClass));
+            Assert.AreEqual("Foo", ((DynamicClass)@class).Name);
+            Assert.AreEqual("Module1::Foo", ((DynamicClass)@class).FullName);
+        }
+
+        [TestMethod]
+        public void Equals()
+        {
+            ModuleExpression mexpr1 = new("Module1", new ConstantExpression(1));
+            ModuleExpression mexpr2 = new("Module1", new ConstantExpression(2));
+            ModuleExpression mexpr3 = new("Module2", new ConstantExpression(1));
+            ModuleExpression mexpr4 = new("Module1", new ConstantExpression(1));
+
+            Assert.IsFalse(mexpr1.Equals(null));
+            Assert.IsFalse(mexpr1.Equals(123));
+            Assert.IsFalse(mexpr1.Equals("foo"));
+
+            Assert.IsTrue(mexpr1.Equals(mexpr4));
+            Assert.IsTrue(mexpr4.Equals(mexpr1));
+            Assert.AreEqual(mexpr1.GetHashCode(), mexpr4.GetHashCode());
+
+            Assert.IsFalse(mexpr1.Equals(mexpr2));
+            Assert.IsFalse(mexpr2.Equals(mexpr1));
+            Assert.IsFalse(mexpr1.Equals(mexpr3));
+            Assert.IsFalse(mexpr3.Equals(mexpr1));
+        }
+    }
+}

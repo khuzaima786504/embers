@@ -1,0 +1,12 @@
+.vs
+bin/
+obj/
+*.log
+*.tmp
+*.user
+*.suo
+*.DS_Store
+**/bin/
+**/obj/
+Thumbs.db
+TestResults/
