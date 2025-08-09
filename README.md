@@ -7,6 +7,8 @@ Embers is an experimental runtime, taking inspiration from and building upon the
 - [Embers by Joy-less](https://github.com/Joy-less/Embers)
 - [RubySharp by AjLopez](https://github.com/ajlopez/RubySharp)
 
+While a large portion of commonly used functions from Ruby's StdLib are present in the solution, full type binding and implementation is far from complete. Embers' architecture adheres to a strict pattern making it easy to extend, and these features will evolve over time.
+
 ## Overview
 
 Embers is built around a clean, minimal core with the goal of executing Ruby-style scripts in constrained or embedded environments. The interpreter features:
@@ -171,7 +173,7 @@ dotnet test Embers.Tests
 
 ## Security Configuration
 
-Embers includes a host-level **type access policy** system to restrict which .NET types can be accessed or exposed to the interpreter. This system is defined in `Embers.Security.TypeAccessPolicy` and enforces security through two modes:
+Ruby-C# interop is powerful, but allowing any foreign code execution complete and unfettered access to .NET at runtime, can be equally dangerous and allows for potential malicious code injection. To combat this, Embers includes a host-level **type access policy** system to restrict which .NET types and namespaces can be accessed or exposed to the interpreter. This system is defined in `Embers.Security.TypeAccessPolicy` and enforces security through two modes:
 
 ### Security Modes
 
@@ -217,6 +219,47 @@ To reset all policies:
 TypeAccessPolicy.Clear();
 ```
 
+`TypeAccessPolicy` is internal only. The policy is governed by the machine (runtime) instance via the public API:
+
+```
+        /// <summary>
+        /// Sets the type access policy.
+        /// Allowed entries are a list of full type names that are allowed to be accessed.
+        /// Provide allowed entries as a list of strings where final character '.' implies a namespace.
+        /// </summary>
+        /// <param name="allowedEntries">The allowed entries.</param>
+        public void SetTypeAccessPolicy(IEnumerable<string> allowedEntries, SecurityMode mode = SecurityMode.WhitelistOnly)
+        {
+            TypeAccessPolicy.SetPolicy(allowedEntries, mode);
+        }
+
+        /// <summary>
+        /// Allows the type.
+        /// </summary>
+        /// <param name="fullTypeName">Full name of the type.</param>
+        public void AllowType(string fullTypeName)
+        {
+            Security.TypeAccessPolicy.AddType(fullTypeName);
+        }
+
+        /// <summary>
+        /// Allows the namespace.
+        /// </summary>
+        /// <param name="prefix">The prefix.</param>
+        public void AllowNamespace(string prefix)
+        {
+            Security.TypeAccessPolicy.AddNamespace(prefix);
+        }
+
+        /// <summary>
+        /// Clears the security policy.
+        /// </summary>
+        public void ClearSecurityPolicy()
+        {
+            Security.TypeAccessPolicy.Clear();
+        }
+```
+
 ### Runtime Enforcement
 
 Any type lookups during execution check against this policy:
@@ -232,7 +275,7 @@ This ensures unregistered types are never exposed to interpreted code under `Whi
 
 ## Building a Custom DSL
 
-Embers enables you to define host-side .NET methods as callable functions within Ruby scripts. This is the foundation for building domain-specific languages (DSLs) tailored to your application's runtime.
+Embers enables you to define host-side .NET methods as callable functions within Ruby scripts. This is the foundation for building domain-specific languages (DSLs) tailored to your application's runtime and obscuring your functional code.
 
 ### Define a Host Function
 
