@@ -323,7 +323,7 @@ machine.InjectFromReferencedAssemblies();
 
 ### Multiple Names and Composition
 
-You can expose a function under multiple Ruby names:
+You can expose a function under multiple Ruby aliases:
 
 ```csharp
 [HostFunction("guid", "generate_guid")]
