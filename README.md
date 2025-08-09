@@ -314,7 +314,7 @@ machine.InjectFromCallingAssembly();
 machine.Execute("hello"); // prints "Hello from Embers!"
 ```
 
-You can also inject from a specific assembly or all referenced ones:
+You can also inject from a specific assembly or all referenced ones if you are follwing a plugin architecture or have separated your DSL across projects:
 
 ```csharp
 machine.InjectFromAssembly(typeof(MyDSLClass).Assembly);
