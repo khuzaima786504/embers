@@ -350,12 +350,12 @@ using Embers;
 
 public class RubyScripting : MonoBehaviour
 {
-    private Machine ruby;
+    private Machine embers;
 
     void Start()
     {
-        ruby = new Machine();
-        ruby.Execute("puts 'Hello from Unity via Ruby!'");
+        embers = new Machine();
+        embers.Execute("puts 'Hello from Unity via Ruby!'");
     }
 }
 ```
