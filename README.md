@@ -14,6 +14,31 @@ Embers is built around a clean, minimal core with the goal of executing Ruby-sty
 - Robust exception model mirroring Ruby's error semantics
 - Embeddability and interoperability within .NET 9 projects
 
+---
+
+## Design
+
+```mermaid
+flowchart TD
+    A[Source Code (Ruby-like Script)]
+    B[Lexer<br/>Embers.Compiler.Lexer]
+    C[Parser<br/>Embers.Compiler.Parser]
+    D[Expression Tree<br/>IExpression Instances]
+    E[Machine<br/>Embers.Machine]
+    F[Context & Scope<br/>Context / BlockContext]
+    G[Execution<br/>Visitor-Style Interpreter]
+    H[Result or Side Effects]
+
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    E --> G
+    F --> G
+    G --> H
+```
+
 ## Projects
 
 - `Embers`: Core interpreter (main focus)
