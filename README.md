@@ -3,6 +3,10 @@
 
 **Embers** (Embedded Ruby Script) is a compact Ruby interpreter implemented in C# targeting .NET 9. Designed for embedding, scripting, and lightweight runtime execution, Embers brings the expressive power of Ruby to .NET-based systems.
 
+Embers is an experimental runtime, taking inspiration from and building upon the following abandoned projects:
+- [Embers by Joy-less](https://github.com/Joy-less/Embers)
+- [RubySharp by AjLopez](https://github.com/ajlopez/RubySharp)
+
 ## Overview
 
 Embers is built around a clean, minimal core with the goal of executing Ruby-style scripts in constrained or embedded environments. The interpreter features:
