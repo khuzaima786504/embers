@@ -18,7 +18,7 @@ Embers is built around a clean, minimal core with the goal of executing Ruby-sty
 
 - `Embers`: Core interpreter (main focus)
 - `Embers.Console`: Example CLI host for executing `.rb` scripts or launching an interactive REPL
-- `Embers.Tests`: Unit tests covering all interpreter functionality (every public method is tested)
+- `Embers.Tests`: Unit tests covering interpreter functionality
 
 ## Design Goals
 
@@ -96,6 +96,7 @@ dotnet build
 dotnet test Embers.Tests
 ```
 
+---
 
 ## Security Configuration
 
@@ -156,7 +157,7 @@ if (!TypeAccessPolicy.IsAllowed(fullTypeName))
 
 This ensures unregistered types are never exposed to interpreted code under `WhitelistOnly` mode.
 
-
+---
 
 ## Building a Custom DSL
 
@@ -225,7 +226,6 @@ Then from Ruby:
 puts guid
 puts generate_guid
 ```
-
 
 ## Practical Use Cases
 
