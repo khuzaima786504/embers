@@ -43,7 +43,7 @@ flowchart TD
 
 ### Logical Topography
 
-```
+```mermaid
 graph TD
     A[Embers]
     
